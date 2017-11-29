@@ -1,6 +1,6 @@
 {
   "name": "launcher-api-support",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "./lib/main",
   "description": "Plugin for mailspring : add support for launcher api (unity)",
   "license": "GPL-3.0",

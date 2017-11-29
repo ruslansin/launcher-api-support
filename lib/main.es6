@@ -8,42 +8,68 @@ import dbus from 'dbus-native';
 export class LauncherAPIUpdater {
     constructor(needUpdate) {
         this.unlisteners = [
-            FocusedPerspectiveStore.listen(this._updateUnread, this),
-            ThreadCountsStore.listen(this._updateUnread, this)
+            FocusedPerspectiveStore.listen(this._updateBadges, this),
+            ThreadCountsStore.listen(this._updateBadges, this)
         ];
 
-        this._latestUnread = 0;
+        this._onValueChanged = AppEnv.config.onDidChange('core.notifications.countBadge', ({
+            newValue
+        }) => {
+            if (newValue === 'hide') {
+                this._hideBadges();
+            }
+            this._updateBadges(newValue);
+        });
 
         if (needUpdate) {
-            this._updateUnread();
+            this._updateBadges(this._getPref());
         }
     }
 
     unlisten() {
+        this._hideBadges();
         for (const unlisten of this.unlisteners) {
             unlisten();
         }
+        this._onValueChanged.dispose();
     }
 
-    _getUnread() {
-        let unread = 0;
+    _getStats() {
+        let unread = 0,
+            total = 0;
 
         // unread messages depend on a focused mailbox
         let accountIds = FocusedPerspectiveStore.current().accountIds;
         for (let c of CategoryStore.getCategoriesWithRoles(accountIds, 'inbox')) {
             unread += ThreadCountsStore.unreadCountForCategoryId(c.id);
+            total += ThreadCountsStore.totalCountForCategoryId(c.id);
         }
-        return unread;
+
+        return [unread, total];
     }
 
-    _updateUnread() {
-        let newUnread = this._getUnread();
+    _getPref() {
+        return AppEnv.config.get('core.notifications.countBadge');
+    }
 
-        if (newUnread == this._latestUnread)
+    _updateBadges(mode) {
+        if (mode === undefined) {
+            mode = this._getPref();
+        }
+
+        if (mode === 'hide') {
             return;
+        }
 
-        this._latestUnread = newUnread;
-        this._updateCounter(newUnread);
+        let [unread, total] = this._getStats();
+
+        let count = mode === 'unread' ? unread : total;
+
+        this._updateCounter(count);
+    }
+
+    _hideBadges() {
+        this._updateCounter(0);
     }
 
     _updateCounter(count) {
