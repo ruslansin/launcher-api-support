@@ -10,6 +10,6 @@ You may need to install a version from the [Dash to Dock repository](https://git
 ```Bash
 git clone https://github.com/snqlby/launcher-api-support.git
 cd launcher-api-support
-npm install
+npm install && npm run-script build
 ```
 Open your Mailspring app and select **launcher-api-support** directory: `Developer -> Install a Plugin`
